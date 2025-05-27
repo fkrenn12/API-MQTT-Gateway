@@ -129,7 +129,7 @@ async def handle_and_reply_response(response_topic: str, response: aiohttp.Clien
     line_termination = ' ...' if len(body) > 50 else '\n'
     print(line_termination)
     fast_mqtt.publish(response_topic,
-                      {"http-status": response.status, "response": json.loads(body)})  # publishing mqtt topic
+                      {"http-status": response.status, "response": body})  # publishing mqtt topic
 
 
 @fast_mqtt.subscribe("http-get", "+/http-get", "+/+/http-get", "+/+/+/http-get", "+/+/+/+/http-get", qos=1)
