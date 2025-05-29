@@ -247,9 +247,12 @@ async def mqtt_broker_set_credentials_and_connect(credentials: models.BrokerCred
     try:
         resolver = aiodns.DNSResolver(loop=asyncio.get_event_loop())
         await resolver.gethostbyname(host, socket.AF_INET)
-        if fast_mqtt.client.is_connected:
+        try:
+            # if fast_mqtt.client.is_connected:
             await fast_mqtt.client.disconnect()
             await asyncio.sleep(1)
+        except Exception as e:
+            print(f'mqtt_broker_set_credentials_and_connect {e}')
         print('broker credentials and connecting', host, port, username, password, bool(ssl))
         fast_mqtt.client.set_auth_credentials(username, password)
         await asyncio.wait_for(fast_mqtt.client.connect(host=host, port=port, ssl=bool(ssl)), 5)
