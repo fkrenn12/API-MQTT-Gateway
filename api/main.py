@@ -125,28 +125,26 @@ async def reply_message(client: MQTTClient, topic: str, payload: bytes, qos: int
 async def handle_and_reply_response(response_topic: str, response: aiohttp.ClientResponse):
     print("Status:", response.status)
     print('headers', response.headers)
-    reply=str()
+    reply = str()
     content_type = response.headers.get('Content-Type', 'Undefined')
+    print(content_type)
     if content_type.startswith('application/json'):
         reply = await response.json()
     elif content_type.startswith('application/x-www-form-urlencoded'):
         reply = await response.content.read()
+        reply = reply.decode('utf-8')
     elif content_type.startswith('application/xml'):
         reply = await response.content.read()
         reply = reply.decode('utf-8')
     else:
         reply = await response.text()
 
-    print("Type:", type(reply))
-    try:
-        print("Reply:", json.dumps(reply)[:50], end='')
-    except:
-        print("Reply:", reply[:50], end='')
+    # print(reply)
+    print("Type of reply:", type(reply))
 
-    line_termination = ' ...' if len(reply) > 50 else '\n'
-    print(line_termination)
     fast_mqtt.publish(response_topic,
-                      {"http-status": response.status, "response": reply})  # publishing mqtt topic
+                      {"http-status": response.status, "content-type": content_type,
+                          "response": reply})  # publishing mqtt topic
 
 
 @fast_mqtt.subscribe("http-get", "+/http-get", "+/+/http-get", "+/+/+/http-get", "+/+/+/+/http-get", qos=1)
