@@ -106,7 +106,8 @@ def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
                                                                          time.localtime(time.time()))}))
 
 
-@fast_mqtt.subscribe("back-to-api/#", "+/back-to-api/#", "+/+/back-to-api/#", "+/+/+/back-to-api/#", qos=1)
+@fast_mqtt.subscribe("back-to-api/#", "+/back-to-api/#", "+/+/back-to-api/#", "+/+/+/back-to-api/#",
+                     "+/+/+/+/back-to-api/#", qos=1)
 async def reply_message(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     print("reply_message: ", topic, payload.decode(), qos, properties)
     try:
@@ -124,17 +125,34 @@ async def reply_message(client: MQTTClient, topic: str, payload: bytes, qos: int
 async def handle_and_reply_response(response_topic: str, response: aiohttp.ClientResponse):
     print("Status:", response.status)
     print('headers', response.headers)
-    body = await response.text()
-    print("Body:", body[:50], end='')
-    line_termination = ' ...' if len(body) > 50 else '\n'
+    reply=str()
+    content_type = response.headers.get('Content-Type', 'Undefined')
+    if content_type.startswith('application/json'):
+        reply = await response.json()
+    elif content_type.startswith('application/x-www-form-urlencoded'):
+        reply = await response.content.read()
+    elif content_type.startswith('application/xml'):
+        reply = await response.content.read()
+        reply = reply.decode('utf-8')
+    else:
+        reply = await response.text()
+
+    print("Type:", type(reply))
+    try:
+        print("Reply:", json.dumps(reply)[:50], end='')
+    except:
+        print("Reply:", reply[:50], end='')
+
+    line_termination = ' ...' if len(reply) > 50 else '\n'
     print(line_termination)
     fast_mqtt.publish(response_topic,
-                      {"http-status": response.status, "response": body})  # publishing mqtt topic
+                      {"http-status": response.status, "response": reply})  # publishing mqtt topic
 
 
 @fast_mqtt.subscribe("http-get", "+/http-get", "+/+/http-get", "+/+/+/http-get", "+/+/+/+/http-get", qos=1)
 async def http_get(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     print("request: ", topic, payload.decode(), qos, properties)
+    response_topic = topic.replace("http-get", "http-get-response")
     try:
         payload = json.loads(payload.decode())
         path = payload.get("path", str())
@@ -146,10 +164,11 @@ async def http_get(client: MQTTClient, topic: str, payload: bytes, qos: int, pro
         url = f'{host}{path}'
         async with aiohttp.ClientSession() as session:
             async with session.get(url, params=params, headers=headers) as response:
-                response_topic = topic.replace("http-get", "http-get-response")
                 await handle_and_reply_response(response_topic, response)
     except Exception as e:
         print(f'home_message {e}')
+        fast_mqtt.publish(response_topic,
+                          {"http-status": 404, "response": str(e)})
 
 
 @fast_mqtt.subscribe("http-post", "+/http-post", "+/+/http-post", "+/+/+/http-post", "+/+/+/+/http-post", qos=1)
@@ -180,7 +199,7 @@ async def http_post(client: MQTTClient, topic: str, payload: bytes, qos: int, pr
 
 
 @fast_mqtt.subscribe("api-buffer-get", "+/api-buffer-get", "+/+/api-buffer-get", "+/+/+/api-buffer-get",
-                     "+/+/+/+/api-buffer-read", qos=1)
+                     "+/+/+/+/api-buffer-get", qos=1)
 async def api_buffer_get(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     global buffer
     print("api_buffer_get: ", topic, payload.decode(), qos, properties)
@@ -350,12 +369,15 @@ async def publish_and_wait_for_message_reply(
 @app.get("/mqtt-read",
          description="Read buffered message from specific topic",
          tags=['Communication'])
-async def read_message(topic=Query(default="back-to-api",
+async def read_message(autoflush: int = Query(default=0, ge=0, le=1,
+                                              description='0: leave value in buffer 1: Value will be flushed after reading'),
+                       topic=Query(default="back-to-api",
                                    description="must contain 'back-to-api'")) -> Any:
     payload, timestamp = messages.get(topic, (None, None))
     print(topic, payload, timestamp)
     try:
-        del messages[topic]
+        if autoflush:
+            del messages[topic]
     except KeyError:
         pass
     _datetime = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(timestamp))
