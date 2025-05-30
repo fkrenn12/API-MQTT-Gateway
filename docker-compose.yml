@@ -11,6 +11,8 @@ services:
     # ports:
     #  - '${API_STD_PORT}:${API_STD_PORT}'
     volumes:
+      # TODO synchronize with Dockerized-Web-Framework
+      # - ./api:/usr/src/app:ro
       - ./.env:/usr/src/.env:ro
       - /etc/localtime:/etc/localtime
       - ./.apimqtt_gateway/config:/usr/src/app/config
