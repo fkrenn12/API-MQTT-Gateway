@@ -8,15 +8,15 @@ services:
     environment:
       - PRODUCTION=True
       - PERSISTENT_CONFIG_FILENAME="config.std"
-    ports:
-      - '${API_STD_PORT}:${API_STD_PORT}'
+    # ports:
+    #  - '${API_STD_PORT}:${API_STD_PORT}'
     volumes:
       - ./.env:/usr/src/.env:ro
       - /etc/localtime:/etc/localtime
       - ./.apimqtt_gateway/config:/usr/src/app/config
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`$(SUBDOMAIN_API)$(DOMAIN)`)"
+      - "traefik.http.routers.api.rule=Host(`${SUBDOMAIN_API}${DOMAIN}`)"
       - "traefik.http.routers.api.entrypoints=websecure"
       - "traefik.http.services.api.loadbalancer.server.port=${API_STD_PORT}"
       - "traefik.http.routers.api.tls.certresolver=letsencrypt"
