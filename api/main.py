@@ -23,6 +23,14 @@ print(f'Persistent Config File: {filename}')
 env_file_path = Path(f"config/{filename}")
 # Create the file if it does not exist.
 env_file_path.touch(mode=0o600, exist_ok=True)
+try:
+    print(socket.gethostbyname('mosquitto'))
+    # we are on docker container with running service mosquitto
+    # we want to connect to this first
+    DEFAULT_BROKER = 'mosquitto'
+except Exception as e:
+    DEFAULT_BROKER = 'mqtt.mosquitto.org'
+
 
 
 def read_config(file_path: Path):
@@ -52,7 +60,7 @@ description = """
 """
 
 mqtt_config = MQTTConfig(
-    host=config.get("HOST", "test.mosquitto.org"),
+    host=config.get("HOST", DEFAULT_BROKER),
     port=int(config.get("PORT", "1883")),
     keepalive=60,
     username=config.get("USERNAME", str()),
@@ -106,7 +114,7 @@ def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
 
 
 @fast_mqtt.subscribe("back-to-api/#", "+/back-to-api/#", "+/+/back-to-api/#", "+/+/+/back-to-api/#",
-                     "+/+/+/+/back-to-api/#",  qos=1)
+                     "+/+/+/+/back-to-api/#", qos=1)
 async def reply_message(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     print("reply_message: ", topic, payload.decode(), qos, properties)
     try:
@@ -143,7 +151,7 @@ async def handle_and_reply_response(response_topic: str, response: aiohttp.Clien
 
     fast_mqtt.publish(response_topic,
                       {"http-status": response.status, "content-type": content_type,
-                          "response": reply})  # publishing mqtt topic
+                       "response": reply})  # publishing mqtt topic
 
 
 @fast_mqtt.subscribe("http-get", "+/http-get", "+/+/http-get", "+/+/+/http-get", "+/+/+/+/http-get", qos=1)
