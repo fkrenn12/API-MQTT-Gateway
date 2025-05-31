@@ -52,9 +52,14 @@ services:
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
-      # - "traefik.http.routers.traefik.middlewares=basic-auth-global"
-      # Passwort Diplomarbeit_2024
-      # - "traefik.http.middlewares.basic-auth-global.basicauth.users=admin:$$2y$$05$$gY5Uot31ZdYJVqxCJ.YEdu0JE86dBh0SM3INin0xEPCrMudc3rrMi"
+      # https://doc.traefik.io/traefik/middlewares/http/basicauth/
+      # Important Note: when used in docker-compose.yml all dollar signs in the hash need to be doubled for escaping.
+      # To create a user:password pair, the following command can be used:
+      # echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+      # Also note that dollar signs should NOT be doubled when they not evaluated (e.g. Ansible docker_container module).
+      # hash generator can be found here: https://bcrypt-generator.com/
+      # Default password: traefik
+      - "traefik.http.middlewares.basic-auth-global.basicauth.users=admin:$$2a$$16$$Vu0NJCNCa4KR28FqVr.grOLGtJgrQ2WmrsC0XyG0ZhHZYcXcaG4hW"
     networks:
       - backnet
 
