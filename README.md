@@ -1,4 +1,12 @@
 # API-MQTT Gateway
+# How do get it running
+## Local Windows 
+cd api   
+uvicorn --reload main:app --port 5600 --log-level debug  
+## Local Docker on Windows  
+execute script: rebuild_and_start.local.development.ps1  
+## Production on Linux
+execute script: rebuild_and_start.prod.sh
 ## API -> MQTT 
 ## Publishing mqtt message from http 
 Prerequisist: Running MQTT-Broker / you can use public broker for first use and testing

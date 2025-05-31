@@ -9,13 +9,13 @@ services:
     tty: true        # docker run -t
     environment:
       - PRODUCTION=True
-      - PERSISTENT_CONFIG_FILENAME="config.std"
+      - PERSISTENT_CONFIG_FILENAME="config"
     # ports:
     #  - '${API_STD_PORT}:${API_STD_PORT}'
     volumes:
-      - ${MOUNTCODE_API}
+      - ./api:/usr/src/app:volume-nocopy
+      - ./.api-mqtt-gateway:/usr/src/app/config
       - /etc/localtime:/etc/localtime
-      - ./.apimqtt_gateway/config:/usr/src/app/config
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`${SUBDOMAIN_API}${DOMAIN}`)"

@@ -105,7 +105,7 @@ def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
 
 
 @fast_mqtt.subscribe("back-to-api/#", "+/back-to-api/#", "+/+/back-to-api/#", "+/+/+/back-to-api/#",
-                     "+/+/+/+/back-to-api/#", qos=1)
+                     "+/+/+/+/back-to-api/#",  qos=1)
 async def reply_message(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     print("reply_message: ", topic, payload.decode(), qos, properties)
     try:
