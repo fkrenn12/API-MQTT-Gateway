@@ -8,8 +8,6 @@ from typing import Any
 import aiodns
 import aiohttp
 from fastapi import FastAPI, Body, Query
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 from fastapi_mqtt import FastMQTT, MQTTConfig
 from gmqtt import Client as MQTTClient
 import os
@@ -38,7 +36,7 @@ config = read_config(env_file_path)
 print(f'Configuration {config}')
 description = """
 ## 🚀🚀 API-MQTT Gateway 🚀🚀
-### MQTT-Broker Credentials
+### MQTT-Broker Credentials 
 * **Set credentials and connect** (_implemented_)\n
 * **Get credentials information and connection state** (_implemented_)\n
 ### MQTT-Communication

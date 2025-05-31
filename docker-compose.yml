@@ -1,6 +1,8 @@
 services:
   api:
-    build: ./api
+    build:
+      context: ./api
+      dockerfile: ${DOCKERFILE}
     container_name: api
     restart: always
     stdin_open: true # docker run -i
@@ -11,9 +13,7 @@ services:
     # ports:
     #  - '${API_STD_PORT}:${API_STD_PORT}'
     volumes:
-      # TODO synchronize with Dockerized-Web-Framework
-      # - ./api:/usr/src/app:ro
-      - ./.env:/usr/src/.env:ro
+      - ${MOUNTCODE_API}
       - /etc/localtime:/etc/localtime
       - ./.apimqtt_gateway/config:/usr/src/app/config
     labels:
@@ -29,7 +29,7 @@ services:
       - -c
       - |
         cd /usr/src/app
-        uvicorn main:app --host "0.0.0.0" --port ${API_STD_PORT} --proxy-headers
+        uvicorn main:app ${RELOAD} --workers 1 --host "0.0.0.0" --port ${API_STD_PORT} --proxy-headers
 
   traefik:
     build:
@@ -52,9 +52,9 @@ services:
       - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.routers.traefik.middlewares=basic-auth-global"
+      # - "traefik.http.routers.traefik.middlewares=basic-auth-global"
       # Passwort Diplomarbeit_2024
-      - "traefik.http.middlewares.basic-auth-global.basicauth.users=admin:$$2y$$05$$gY5Uot31ZdYJVqxCJ.YEdu0JE86dBh0SM3INin0xEPCrMudc3rrMi"
+      # - "traefik.http.middlewares.basic-auth-global.basicauth.users=admin:$$2y$$05$$gY5Uot31ZdYJVqxCJ.YEdu0JE86dBh0SM3INin0xEPCrMudc3rrMi"
     networks:
       - backnet
 
