@@ -14,8 +14,9 @@ import os
 import models
 
 try:
-    filename = eval(os.environ.get('PERSISTENT_CONFIG_FILENAME'))
-except:
+    filename = os.environ.get('PERSISTENT_CONFIG_FILENAME')
+except Exception as e:
+    print(e)
     filename = 'config.std'
 
 print(f'Persistent Config File: {filename}')

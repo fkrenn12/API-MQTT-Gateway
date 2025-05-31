@@ -9,7 +9,7 @@ services:
     tty: true        # docker run -t
     environment:
       - PRODUCTION=True
-      - PERSISTENT_CONFIG_FILENAME="config"
+      - PERSISTENT_CONFIG_FILENAME=settings_${API_STD_PORT}.json
     # ports:
     #  - '${API_STD_PORT}:${API_STD_PORT}'
     volumes:
