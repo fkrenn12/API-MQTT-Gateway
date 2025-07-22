@@ -12,6 +12,7 @@ from fastapi_mqtt import FastMQTT, MQTTConfig
 from gmqtt import Client as MQTTClient
 import os
 import models
+import ssl
 
 try:
     filename = os.environ.get('PERSISTENT_CONFIG_FILENAME')
@@ -30,7 +31,6 @@ try:
     DEFAULT_BROKER = 'mosquitto'
 except Exception as e:
     DEFAULT_BROKER = 'mqtt.mosquitto.org'
-
 
 
 def read_config(file_path: Path):
@@ -267,7 +267,7 @@ async def mqtt_broker_set_credentials_and_connect(credentials: models.BrokerCred
     port = credentials.port if credentials.port else _config.get("PORT", 1883)
     username = credentials.username if credentials.username is not None else _config.get("USERNAME", str())
     password = credentials.password if credentials.password is not None else _config.get("PASSWORD", str())
-    ssl = credentials.ssl if credentials.ssl is not None else _config.get("SSL", 0)
+    _ssl = credentials.ssl if credentials.ssl is not None else _config.get("SSL", 0)
     try:
         resolver = aiodns.DNSResolver(loop=asyncio.get_event_loop())
         await resolver.gethostbyname(host, socket.AF_INET)
@@ -277,9 +277,11 @@ async def mqtt_broker_set_credentials_and_connect(credentials: models.BrokerCred
             await asyncio.sleep(1)
         except Exception as e:
             print(f'mqtt_broker_set_credentials_and_connect {e}')
-        print('broker credentials and connecting', host, port, username, password, bool(ssl))
+        print('broker credentials and connecting', host, port, username, password, bool(_ssl))
         fast_mqtt.client.set_auth_credentials(username, password)
-        await asyncio.wait_for(fast_mqtt.client.connect(host=host, port=port, ssl=bool(ssl)), 5)
+        # ssl context accepts self signed certificates
+        _ssl = False if _ssl == 0 else ssl.SSLContext(ssl.PROTOCOL_TLSv1_2 | ssl.CERT_NONE)
+        await asyncio.wait_for(fast_mqtt.client.connect(host=host, port=port, ssl=_ssl), 5)
         return models.Response(connected=True).model_dump(exclude={"reason"})
     except Exception as e:
         return models.Response(connected=False, reason=str(e)).model_dump()
