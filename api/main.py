@@ -16,11 +16,13 @@ import ssl
 
 try:
     filename = os.environ.get('PERSISTENT_CONFIG_FILENAME')
+    if filename is None:
+        raise Exception("Missing Persistent Config Filename")
 except Exception as e:
     print(e)
     filename = 'config.std'
-
-print(f'Persistent Config File: {filename}')
+finally:
+    print(f'Persistent Config File: {filename}')
 env_file_path = Path(f"config/{filename}")
 # Create the file if it does not exist.
 env_file_path.touch(mode=0o600, exist_ok=True)
@@ -103,12 +105,13 @@ def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
     print(
         f"Connected to: {host}:{client._port} {username} flags {flags}, rc {rc}, properties {properties}")
 
+    print(f'Type ssl {type(client._ssl)}')
     with env_file_path.open('w') as env_file:
         env_file.write(json.dumps({"HOST": host,
                                    "PORT": client._port,
                                    "USERNAME": username,
                                    "PASSWORD": password,
-                                   "SSL": str(int(client._ssl)),
+                                   "SSL": str(int(type(client._ssl) == ssl.SSLContext)),
                                    "LAST_CONNECTION_TIME": time.strftime("%Y-%m-%dT%H:%M:%S",
                                                                          time.localtime(time.time()))}))
 
