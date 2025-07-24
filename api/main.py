@@ -96,26 +96,6 @@ app = FastAPI(lifespan=_lifespan,
               description=description)
 
 
-@fast_mqtt.on_connect()
-def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
-    # client.subscribe(f"{ROOT_TOPIC}/#")  # subscribing mqtt topic
-    username = client._username.decode() if type(client._username) is bytes else client._username
-    password = client._password.decode() if type(client._password) is bytes else client._password
-    host = client._host.decode() if type(client._host) is bytes else client._host
-    print(
-        f"Connected to: {host}:{client._port} {username} flags {flags}, rc {rc}, properties {properties}")
-
-    print(f'Type ssl {type(client._ssl)}')
-    with env_file_path.open('w') as env_file:
-        env_file.write(json.dumps({"HOST": host,
-                                   "PORT": client._port,
-                                   "USERNAME": username,
-                                   "PASSWORD": password,
-                                   "SSL": str(int(type(client._ssl) == ssl.SSLContext)),
-                                   "LAST_CONNECTION_TIME": time.strftime("%Y-%m-%dT%H:%M:%S",
-                                                                         time.localtime(time.time()))}))
-
-
 @fast_mqtt.subscribe("back-to-api/#", "+/back-to-api/#", "+/+/back-to-api/#", "+/+/+/back-to-api/#",
                      "+/+/+/+/back-to-api/#", qos=1)
 async def reply_message(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
@@ -243,6 +223,26 @@ async def api_buffer_get(client: MQTTClient, topic: str, payload: bytes, qos: in
         fast_mqtt.publish(response_topic, payload=response, qos=1)
 
 
+@fast_mqtt.on_connect()
+def connect(client: MQTTClient, flags: int, rc: int, properties: Any):
+    # client.subscribe(f"{ROOT_TOPIC}/#")  # subscribing mqtt topic
+    username = client._username.decode() if type(client._username) is bytes else client._username
+    password = client._password.decode() if type(client._password) is bytes else client._password
+    host = client._host.decode() if type(client._host) is bytes else client._host
+    print(
+        f"Connected to: {host}:{client._port} {username} flags {flags}, rc {rc}, properties {properties}")
+
+    print(f'Type ssl {type(client._ssl)}')
+    with env_file_path.open('w') as env_file:
+        env_file.write(json.dumps({"HOST": host,
+                                   "PORT": client._port,
+                                   "USERNAME": username,
+                                   "PASSWORD": password,
+                                   "SSL": str(int(type(client._ssl) == ssl.SSLContext)),
+                                   "LAST_CONNECTION_TIME": time.strftime("%Y-%m-%dT%H:%M:%S",
+                                                                         time.localtime(time.time()))}))
+
+
 @fast_mqtt.on_message()
 async def message(client: MQTTClient, topic: str, payload: bytes, qos: int, properties: Any):
     print("Received message: ", topic, payload.decode(), qos, properties)
@@ -275,7 +275,6 @@ async def mqtt_broker_set_credentials_and_connect(credentials: models.BrokerCred
         resolver = aiodns.DNSResolver(loop=asyncio.get_event_loop())
         await resolver.gethostbyname(host, socket.AF_INET)
         try:
-            # if fast_mqtt.client.is_connected:
             await fast_mqtt.client.disconnect()
             await asyncio.sleep(1)
         except Exception as e:
